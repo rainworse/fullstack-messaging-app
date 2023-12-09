@@ -1,7 +1,7 @@
 import DBHelper from '../DBHelper';
 
 const ChatListController = (() => {
-  const initChatList = (userContext, setUserChats, socketHandlers) => {
+  const initChatList = (userContext, setUserChats) => {
     const getUserChats = async () => {
       const response = await DBHelper.makeHTTPRequest(
         'user/' + userContext.user.id + '/chats',
@@ -21,12 +21,7 @@ const ChatListController = (() => {
 
     if (userContext.user) {
       getUserChats();
-      initWebsocket(socketHandlers);
     }
-  };
-
-  const initWebsocket = (socketHandlers) => {
-    DBHelper.createChatListConnection(socketHandlers);
   };
 
   let selectedListItem = null;
@@ -99,6 +94,7 @@ const ChatListController = (() => {
       }
     }
   };
+
   return { initChatList, chatClicked, searchResultSelected };
 })();
 

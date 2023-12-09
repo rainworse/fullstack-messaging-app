@@ -1,7 +1,7 @@
 import DBHelper from '../DBHelper';
 
 const ChatController = (() => {
-  const setupChat = (chatID, setChatMessages, setChatUsers, socketHandlers) => {
+  const setupChat = (chatID, setChatMessages, setChatUsers) => {
     const getChatData = async () => {
       const response = await DBHelper.makeHTTPRequest('chat/' + chatID, 'GET');
       if (response.successful) {
@@ -30,18 +30,13 @@ const ChatController = (() => {
     if (chatID) {
       if (!chatID.newChat) {
         getChatData();
-        initWebsocket(chatID, socketHandlers);
       } else {
         getRecipient();
       }
     }
   };
 
-  const initWebsocket = (chatID, socketHandlers) => {
-    DBHelper.createChatConnection(chatID, socketHandlers);
-  };
-
-  const sendMessage = async (chatID, setSelectedChat, userID, msg) => {
+  const sendMessage = async (chatID, setSelectedChat, msg, userData) => {
     if (msg !== null && msg !== undefined && msg.length > 0) {
       if (chatID) {
         if (chatID.newChat) {
@@ -65,7 +60,16 @@ const ChatController = (() => {
           if (!response.successful) {
             console.error(response.data);
           } else {
-            DBHelper.sendMessageToChatSocket({ from: userID, text: msg });
+            DBHelper.sendWSMessage({
+              type: 'send_message',
+              chatID,
+              message: JSON.stringify({
+                type: 'message',
+                chatID,
+                message: response.data.message,
+                fromUsername: userData.username,
+              }),
+            });
           }
         }
       }

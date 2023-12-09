@@ -5,6 +5,7 @@ import ChatListItem from './ChatListItem';
 import ChatSearchBar from './ChatSearchBar';
 import StyleHelper from '../styles/StyleHelper';
 import ChatListController from './ChatListController';
+import DBHelper from '../DBHelper';
 
 const ChatList = ({ selectedChat, setSelectedChat }) => {
   const userContext = useContext(UserContext);
@@ -33,18 +34,38 @@ const ChatList = ({ selectedChat, setSelectedChat }) => {
     );
   };
 
-  const socketHandlers = [
-    {
-      event: 'message',
-      handler: (event) => {
-        console.log(event);
-      },
-    },
-  ];
-
   useEffect(() => {
-    ChatListController.initChatList(userContext, setUserChats, socketHandlers);
+    ChatListController.initChatList(userContext, setUserChats);
+    DBHelper.addWSEventListener('chatlist', wsListener);
   }, []);
+
+  const wsListener = (data) => {
+    const receivedData = JSON.parse(data);
+    if (receivedData.type === 'message') {
+      setUserChats((prevUserChats) => {
+        const chatToUpdate = prevUserChats.find(
+          (c) => c.id === receivedData.chatID
+        );
+        chatToUpdate.lastMessage = receivedData.message;
+        chatToUpdate.lastMessage.dateSent = Date.now();
+        chatToUpdate.lastMessageUser = {
+          id: receivedData.message.from,
+          username: receivedData.fromUsername,
+        };
+        return prevUserChats
+          .map((c) => {
+            if (c.id === chatToUpdate.id) return chatToUpdate;
+            return c;
+          })
+          .sort((o1, o2) => {
+            return (
+              new Date(o2.lastMessage.dateSent) -
+              new Date(o1.lastMessage.dateSent)
+            );
+          });
+      });
+    }
+  };
 
   return (
     <Box>

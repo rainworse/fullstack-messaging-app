@@ -70,9 +70,17 @@ const router = createBrowserRouter([
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
 
-  const setUser = (id, token) => {
+  const getUserData = async (id) => {
+    const response = await DBHelper.makeHTTPRequest('user/' + id, 'GET');
+
+    if (response.successful) return response.data;
+    return null;
+  };
+
+  const setUser = async (id, token) => {
     if (id !== null && token !== null) {
-      setCurrentUser({ id, token });
+      const userData = await getUserData(id);
+      setCurrentUser({ id, token, userData });
       localStorage.setItem('currentUser', JSON.stringify({ id, token }));
     } else {
       setCurrentUser(null);
@@ -89,9 +97,11 @@ function App() {
         const response = await DBHelper.makeHTTPRequest('verifyToken', 'GET');
         if (!response.successful) {
           user = null;
+        } else {
+          const userData = await getUserData(user.id);
+          user.userData = userData;
         }
       }
-
       setCurrentUser(user);
     };
 

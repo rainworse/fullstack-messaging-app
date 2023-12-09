@@ -6,9 +6,6 @@ const DBHelper = (() => {
     token = userToken;
   };
 
-  let chatSocket = null;
-  let chatListSocket = null;
-
   const makeHTTPRequest = async (path, method, body) => {
     let response = await fetch(url + path, {
       method,
@@ -29,52 +26,44 @@ const DBHelper = (() => {
     return headers;
   };
 
-  const createChatConnection = (chatID, listeners) => {
-    if (chatSocket) {
-      chatSocket.close();
+  let wsConnection = null;
+  const wsListeners = new Map();
+
+  const addWSEventListener = (key, listener) => {
+    wsListeners.set(key, listener);
+  };
+
+  const createWSConnection = () => {
+    if (wsConnection) {
+      wsConnection.close();
     }
-    chatSocket = new WebSocket(
-      'ws://localhost:3000/chat/' + chatID + '?token=' + token
-    );
-    for (const listener of listeners) {
-      chatSocket.addEventListener(listener.event, listener.handler);
+    wsConnection = new WebSocket('ws://localhost:3000/connect/' + token);
+    wsConnection.addEventListener('message', (event) => {
+      for (const listener of wsListeners.values()) {
+        listener(event.data);
+      }
+    });
+  };
+
+  const closeWSConnection = () => {
+    if (wsConnection) {
+      wsConnection.close();
     }
   };
 
-  const createChatListConnection = (listeners) => {
-    if (chatListSocket) {
-      chatListSocket.close();
+  const sendWSMessage = (msg) => {
+    if (wsConnection) {
+      wsConnection.send(JSON.stringify(msg));
     }
-    chatListSocket = new WebSocket(
-      'ws://localhost:3000/chatupdates' + '?token=' + token
-    );
-    for (const listener of listeners) {
-      chatListSocket.addEventListener(listener.event, listener.handler);
-    }
-  };
-
-  const sendMessageToChatSocket = (data) => {
-    if (chatSocket) {
-      chatSocket.send(JSON.stringify(data));
-    }
-  };
-
-  const closeChatConnection = () => {
-    if (chatSocket) chatSocket.close();
-  };
-
-  const closeChatListConnection = () => {
-    if (chatListSocket) chatListSocket.close();
   };
 
   return {
     setToken,
     makeHTTPRequest,
-    createChatConnection,
-    sendMessageToChatSocket,
-    closeChatConnection,
-    createChatListConnection,
-    closeChatListConnection,
+    addWSEventListener,
+    createWSConnection,
+    closeWSConnection,
+    sendWSMessage,
   };
 })();
 

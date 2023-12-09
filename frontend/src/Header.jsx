@@ -5,7 +5,6 @@ import { Box, useTheme } from '@mui/material';
 
 import UserContext from './UserContext';
 import { useContext, useEffect, useState } from 'react';
-import DBHelper from './DBHelper';
 import StyledAvatar from './styled-components/StyledAvatar';
 
 const Header = () => {
@@ -20,21 +19,12 @@ const Header = () => {
   };
 
   useEffect(() => {
-    const getUserInfo = async () => {
-      const response = await DBHelper.makeHTTPRequest(
-        'user/' + userContext.user.id,
-        'GET'
+    if (userContext.user.userData) {
+      setUsername(userContext.user.userData.username);
+      setUserImage(
+        'data:image/jpg;base64,' + userContext.user.userData.profileImage
       );
-      if (response.successful) {
-        setUsername(response.data.username);
-        setUserImage('data:image/jpg;base64,' + response.data.profileImage);
-      } else {
-        setUsername(null);
-        setUserImage(null);
-      }
-    };
-
-    getUserInfo();
+    }
   }, []);
 
   return (

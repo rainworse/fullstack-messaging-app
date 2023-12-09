@@ -392,7 +392,10 @@ describe('/chat/:id/message/send', () => {
       .expect('Content-Type', /json/)
       .expect(200);
 
-    expect(response.body).toBe('Message sent.');
+    const message = response.body.message;
+    expect(message.text).toBe('These');
+    expect(message._id).toBeDefined();
+    expect(message.from).toBeDefined();
     const newChat1 = await Chat.findById(chat1._id).exec();
     expect(newChat1.messages.length).toBe(1);
     compareIDs(newChat1.messages[0].from, user1._id);

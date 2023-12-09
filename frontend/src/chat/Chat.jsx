@@ -11,33 +11,23 @@ const Chat = ({ selectedChatID, setSelectedChat }) => {
   const [chatUsers, setChatUsers] = useState(null);
   const user = useContext(UserContext);
 
-  const socketHandlers = [
-    {
-      event: 'message',
-      handler: (event) => {
-        const message = JSON.parse(event.data);
-        setChatMessages((prevMessages) => {
-          const messages = [...prevMessages, message];
-          return messages;
-        });
-      },
-    },
-  ];
-
   useEffect(() => {
-    ChatController.setupChat(
-      selectedChatID,
-      setChatMessages,
-      setChatUsers,
-      socketHandlers
-    );
+    ChatController.setupChat(selectedChatID, setChatMessages, setChatUsers);
+    DBHelper.addWSEventListener('chat', wsListener);
   }, [selectedChatID]);
 
-  useEffect(() => {
-    return () => {
-      DBHelper.closeChatConnection();
-    };
-  }, []);
+  const wsListener = (data) => {
+    const receivedData = JSON.parse(data);
+    if (receivedData.type === 'message') {
+      if (receivedData.chatID === selectedChatID) {
+        setChatMessages((prevChatMessages) => {
+          console.log(prevChatMessages);
+          console.log(receivedData.message);
+          return [...prevChatMessages, receivedData.message];
+        });
+      }
+    }
+  };
 
   return (
     <Box className="open-chat">
@@ -55,8 +45,8 @@ const Chat = ({ selectedChatID, setSelectedChat }) => {
               ChatController.sendMessage(
                 selectedChatID,
                 setSelectedChat,
-                user.user.id,
-                msg
+                msg,
+                user.user.userData
               )
             }
           />

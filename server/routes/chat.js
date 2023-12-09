@@ -70,76 +70,33 @@ router.get('/user/:id/chats', verifyToken, async (req, res) => {
   res.status(200).json(userChats);
 });
 
-const chatConnections = new Map();
-const chatUserIDs = new Map();
-const userIDToWSMap = new Map();
-const wsToUserIDMap = new Map();
+const connections = new Map();
 
-/**
- * Socket communication for chat
- */
 router.ws(
-  '/chat/:id',
+  '/connect/:token',
   asyncHandler(async (ws, req) => {
-    const chatID = req.params.id;
-    ws.on('message', function (msg) {
-      const connectionsToChat = chatConnections.get(chatID);
-      if (connectionsToChat) {
-        for (const connection of connectionsToChat) {
-          connection.send(msg);
+    const user = routeUtils.verifyTokenWS(req.params.token);
+    connections.set(user.user_id, ws);
+
+    ws.on('close', function () {
+      connections.delete(user);
+    });
+
+    ws.on('message', async function (msg) {
+      const msgData = JSON.parse(msg);
+      if (msgData.type === 'send_message') {
+        const chatID = msgData.chatID;
+        const chatUsers = await Chat.findById(chatID).select('users').exec();
+        if (chatUsers) {
+          for (const user of chatUsers.users.map((u) => u.toString())) {
+            const connection = connections.get(user);
+            if (connection) {
+              connection.send(msgData.message);
+            }
+          }
         }
       }
-      const chatUserIds = chatUserIDs.get(chatID);
-      for (const chatUser of chatUserIds) {
-        const userConnection = userIDToWSMap.get(chatUser);
-        if (userConnection) {
-          userConnection.send({ chatID, msg });
-        }
-      }
     });
-    ws.on('close', function () {
-      const connectionsToChat = chatConnections.get(chatID);
-      if (connectionsToChat) {
-        connectionsToChat.delete(ws);
-      }
-      if (connectionsToChat.length == 0) {
-        chatConnections.delete(chatID);
-      } else {
-        chatConnections.set(chatID, connectionsToChat);
-      }
-    });
-
-    const token = routeUtils.getUrlParameter('token', req.url);
-    const user = routeUtils.verifyTokenWS(token);
-    const chat = await Chat.findById(chatID).exec();
-    const chatUsers = chat.users.map((u) => u._id.toString());
-    if (chatUsers.includes(user.user_id)) {
-      let connectionsToChat = chatConnections.get(chatID);
-      if (!connectionsToChat) connectionsToChat = new Set();
-      connectionsToChat.add(ws);
-      chatConnections.set(chatID, connectionsToChat);
-      chatUserIDs.set(chatID, chatUsers);
-    }
-  })
-);
-
-/**
- * Socket communication for chat lists
- */
-router.ws(
-  '/chatupdates',
-  asyncHandler(async (ws, req) => {
-    ws.on('close', function () {
-      const userID = wsToUserIDMap.get(ws);
-      userIDToWSMap.delete(userID);
-      wsToUserIDMap.delete(ws);
-    });
-
-    const token = routeUtils.getUrlParameter('token', req.url);
-    const user = routeUtils.verifyTokenWS(token);
-
-    userIDToWSMap.set(user.user_id, ws);
-    wsToUserIDMap.set(ws, user.user_id);
   })
 );
 
@@ -228,6 +185,7 @@ router.post('/chat/:id/message/send', verifyToken, [
       return;
     }
     const message = {
+      _id: new mongoose.Types.ObjectId(),
       text: req.body.text,
       from: req.user.user_id,
       read: false,
@@ -235,7 +193,7 @@ router.post('/chat/:id/message/send', verifyToken, [
     await Chat.findByIdAndUpdate(chat._id, {
       $push: { messages: { $each: [message], $position: 0 } },
     });
-    res.status(200).json('Message sent.');
+    res.status(200).json({ message });
   }),
 ]);
 
