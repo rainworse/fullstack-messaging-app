@@ -50,6 +50,16 @@ const ChatController = (() => {
             console.error(response.data);
           } else {
             setSelectedChat(response.data.chatID);
+            DBHelper.sendWSMessage({
+              type: 'send_message',
+              chatID: response.data.chatID,
+              message: JSON.stringify({
+                type: 'new_chat_message',
+                chatID: response.data.chatID,
+                message: response.data.message,
+                fromUsername: userData.username,
+              }),
+            });
           }
         } else {
           const response = await DBHelper.makeHTTPRequest(

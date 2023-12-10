@@ -31,7 +31,11 @@ const ChatListItem = ({
       <ListItemAvatar>
         <StyledAvatar
           src={'data:image/jpg;base64,' + chatInfo.chatIcon}
-          alt={chatInfo.lastMessageUser.username}
+          alt={
+            chatInfo.lastMessageUser && chatInfo.lastMessageUser.username
+              ? chatInfo.lastMessageUser.username
+              : ''
+          }
         />
       </ListItemAvatar>
       <ListItemText
@@ -42,9 +46,13 @@ const ChatListItem = ({
           ) : (
             <span className="chat-list-item-wrapper">
               <span className="chat-list-item-secondary-from">
-                {chatInfo.lastMessageUser.username + ': '}
+                {chatInfo.lastMessageUser && chatInfo.lastMessageUser.username
+                  ? chatInfo.lastMessageUser.username + ': '
+                  : ''}
               </span>
-              {chatInfo.lastMessage.text}
+              {chatInfo.lastMessage && chatInfo.lastMessage.text
+                ? chatInfo.lastMessage.text
+                : ''}
             </span>
           )
         }

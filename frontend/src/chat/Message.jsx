@@ -1,6 +1,13 @@
 import { Box, Typography } from '@mui/material';
+import StyledDeleteForeverIcon from '../styled-components/StyledDeleteForeverIcon';
 
-const Message = ({ message, user, color, sentByThisUser }) => {
+const Message = ({
+  message,
+  id,
+  deleteMessageHandler,
+  color,
+  sentByThisUser,
+}) => {
   return (
     <Box
       sx={{
@@ -11,20 +18,33 @@ const Message = ({ message, user, color, sentByThisUser }) => {
     >
       {sentByThisUser ? (
         <Box
-          sx={{
-            border: '2px solid ' + color.main,
-            borderRadius: '1rem',
-            background: 'white',
-            color: 'black',
-            paddingTop: '5px',
-            paddingBottom: '5px',
-            paddingLeft: '10px',
-            paddingRight: '10px',
-          }}
+          sx={{ display: 'flex', alignItems: 'center' }}
+          className="this-user-message-wrapper"
         >
-          <Typography sx={{ width: '100%', overflowWrap: 'break-word' }}>
-            {message}
-          </Typography>
+          <StyledDeleteForeverIcon
+            sx={{ fontSize: '27px', marginRight: '5px' }}
+            className="delete-message-icon"
+            onClick={() => {
+              deleteMessageHandler(id);
+            }}
+          />
+          <Box
+            sx={{
+              border: '2px solid ' + color.main,
+              borderRadius: '1rem',
+              background: 'white',
+              color: 'black',
+              paddingTop: '5px',
+              paddingBottom: '5px',
+              paddingLeft: '10px',
+              paddingRight: '10px',
+            }}
+            className="this-user-message"
+          >
+            <Typography sx={{ width: '100%', overflowWrap: 'break-word' }}>
+              {message}
+            </Typography>
+          </Box>
         </Box>
       ) : (
         <Box

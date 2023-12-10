@@ -26,6 +26,7 @@ const User = require('../models/user');
 const indexRouter = require('../routes/index');
 const chatRouter = require('../routes/chat');
 const errorHandlers = require('../routes/error');
+const { default: mongoose } = require('mongoose');
 
 app.use(bodyParser.json());
 app.use(
@@ -303,6 +304,64 @@ describe('/chat/:id', () => {
   });
 });
 
+describe('/chatdata/:id', () => {
+  test('Get chat data by id works', async () => {
+    const message1 = { text: 'msg1', from: user2._id, read: false };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    const test = await request(app)
+      .get('/chatdata/' + chat1._id)
+      .set('x-access-token', getTokenForUser(user1))
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(test.body).toBeDefined();
+
+    const chat = test.body;
+
+    compareIDs(chat.id, chat1._id);
+    expect(chat.chatIcon).toBeDefined();
+    expect(chat.lastMessage.text).toBe('msg1');
+    compareIDs(chat.lastMessage.from, user2._id);
+    expect(chat.lastMessageUser.username).toBe('user2');
+    expect(chat.lastMessageUser.profileImage).toBeDefined();
+  });
+
+  test('Get chat invalid id', async () => {
+    const test = await request(app)
+      .get('/chatdata/' + 'NONSENSE')
+      .set('x-access-token', getTokenForUser(user1))
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(test.body).toEqual('Chat ID is not valid.');
+  });
+
+  test('Get chat nonexistent id', async () => {
+    const nonexistentChat = new Chat({ users: [user1._id, user2._id] });
+    const test = await request(app)
+      .get('/chatdata/' + nonexistentChat._id)
+      .set('x-access-token', getTokenForUser(user1))
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(test.body).toEqual('Chat does not exist.');
+  });
+
+  test('Get chat with user not in chat', async () => {
+    const test = await request(app)
+      .get('/chatdata/' + chat1._id)
+      .set('x-access-token', getTokenForUser(user4))
+      .expect('Content-Type', /json/)
+      .expect(403);
+
+    expect(test.body).toEqual(
+      'You do not have permissions to access this chat.'
+    );
+  });
+});
+
 describe('/chat/user/:id', () => {
   test('Get chat by recipient id works', async () => {
     const test = await request(app)
@@ -436,6 +495,300 @@ describe('/chat/:id/message/send', () => {
     expect(response.body).toBe(
       'You do not have permissions to access this chat.'
     );
+  });
+});
+
+describe('/chat/:chatId/message/:msgId/delete', () => {
+  test('Delete message works', async () => {
+    const message1 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg1',
+      from: user1._id,
+      read: false,
+    };
+    const message2 = { text: 'msg2', from: user2._id, read: false };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message2], $position: 0 } },
+    });
+
+    const response = await request(app)
+      .post(`/chat/${chat1._id}/message/${message1._id}/delete`)
+      .set('x-access-token', getTokenForUser(user1))
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(response.body.message).toBe('Message deleted.');
+    expect(response.body.isLastMessage).toBe(false);
+    const newChat1 = await Chat.findById(chat1._id).exec();
+    expect(newChat1.messages.length).toBe(1);
+    expect(newChat1.messages[0].text).toBe('msg2');
+    compareIDs(newChat1.messages[0].from, user2._id);
+  });
+  test('Delete last message works', async () => {
+    const message1 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg1',
+      from: user1._id,
+      read: false,
+    };
+    const message2 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg2',
+      from: user2._id,
+      read: false,
+    };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message2], $position: 0 } },
+    });
+
+    const response = await request(app)
+      .post(`/chat/${chat1._id}/message/${message2._id}/delete`)
+      .set('x-access-token', getTokenForUser(user2))
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(response.body.message).toBe('Message deleted.');
+    expect(response.body.isLastMessage).toBe(true);
+    const newChat1 = await Chat.findById(chat1._id).exec();
+    expect(newChat1.messages.length).toBe(1);
+    expect(newChat1.messages[0].text).toBe('msg1');
+    compareIDs(newChat1.messages[0].from, user1._id);
+  });
+  test('Delete message invalid chat ID', async () => {
+    const message1 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg1',
+      from: user1._id,
+      read: false,
+    };
+    const message2 = { text: 'msg2', from: user2._id, read: false };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message2], $position: 0 } },
+    });
+
+    const response = await request(app)
+      .post(`/chat/nonsense/message/${message1._id}/delete`)
+      .set('x-access-token', getTokenForUser(user2))
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(response.body).toBe('Chat ID is not valid.');
+  });
+  test('Delete message invalid message ID', async () => {
+    const message1 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg1',
+      from: user1._id,
+      read: false,
+    };
+    const message2 = { text: 'msg2', from: user2._id, read: false };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message2], $position: 0 } },
+    });
+
+    const response = await request(app)
+      .post(`/chat/${chat1._id}/message/nonsense/delete`)
+      .set('x-access-token', getTokenForUser(user2))
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(response.body).toBe('Message ID is not valid.');
+  });
+  test('Delete message non existent chat ID', async () => {
+    const message1 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg1',
+      from: user1._id,
+      read: false,
+    };
+    const message2 = { text: 'msg2', from: user2._id, read: false };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message2], $position: 0 } },
+    });
+
+    const response = await request(app)
+      .post(
+        `/chat/${new mongoose.Types.ObjectId()}/message/${message1._id}/delete`
+      )
+      .set('x-access-token', getTokenForUser(user2))
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(response.body).toBe('Chat does not exist.');
+  });
+  test('Delete message with non existent message ID', async () => {
+    const message1 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg1',
+      from: user1._id,
+      read: false,
+    };
+    const message2 = { text: 'msg2', from: user2._id, read: false };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message2], $position: 0 } },
+    });
+    const nonexistentMsg = new mongoose.Types.ObjectId();
+
+    const response = await request(app)
+      .post(`/chat/${chat1._id}/message/${nonexistentMsg}/delete`)
+      .set('x-access-token', getTokenForUser(user2))
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(response.body).toBe(
+      `Message with ID ${nonexistentMsg.toString()} in chat with ID ${chat1._id.toString()} not found.`
+    );
+  });
+  test('Delete message without permission', async () => {
+    const message1 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg1',
+      from: user1._id,
+      read: false,
+    };
+    const message2 = { text: 'msg2', from: user2._id, read: false };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message2], $position: 0 } },
+    });
+
+    const response = await request(app)
+      .post(`/chat/${chat1._id}/message/${message1._id}/delete`)
+      .set('x-access-token', getTokenForUser(user2))
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(response.body).toBe('Cannot delete message sent by another user.');
+    const newChat1 = await Chat.findById(chat1._id).exec();
+    expect(newChat1.messages.length).toBe(2);
+  });
+});
+
+describe('/chat/:id/lastmessage', () => {
+  test('Get last message works', async () => {
+    const message1 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg1',
+      from: user1._id,
+      read: false,
+    };
+    const message2 = { text: 'msg2', from: user2._id, read: false };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message2], $position: 0 } },
+    });
+
+    const response = await request(app)
+      .get(`/chat/${chat1._id}/lastmessage`)
+      .set('x-access-token', getTokenForUser(user2))
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(response.body.message).toBe('msg2');
+    expect(response.body.lastMessageUser).toBeDefined();
+    compareIDs(response.body.lastMessageUser._id, user2._id);
+    expect(response.body.lastMessageUser.username).toBe('user2');
+    expect(response.body.lastMessageUser.profileImage).toBeDefined();
+  });
+  test('Get last message without permission', async () => {
+    const response = await request(app)
+      .get(`/chat/${chat1._id}/lastmessage`)
+      .set('x-access-token', getTokenForUser(user1))
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(response.body).toEqual({});
+  });
+  test('Get last message invalid chat ID', async () => {
+    const message1 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg1',
+      from: user1._id,
+      read: false,
+    };
+    const message2 = { text: 'msg2', from: user2._id, read: false };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message2], $position: 0 } },
+    });
+
+    const response = await request(app)
+      .get(`/chat/nonsense/lastmessage`)
+      .set('x-access-token', getTokenForUser(user2))
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(response.body).toBe('Chat ID is not valid.');
+  });
+  test('Get last message nonexistent chat ID', async () => {
+    const message1 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg1',
+      from: user1._id,
+      read: false,
+    };
+    const message2 = { text: 'msg2', from: user2._id, read: false };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message2], $position: 0 } },
+    });
+
+    const response = await request(app)
+      .get(`/chat/${new mongoose.Types.ObjectId()}/lastmessage`)
+      .set('x-access-token', getTokenForUser(user2))
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(response.body).toBe('Chat does not exist.');
+  });
+  test('Get last message without permission', async () => {
+    const message1 = {
+      _id: new mongoose.Types.ObjectId(),
+      text: 'msg1',
+      from: user1._id,
+      read: false,
+    };
+    const message2 = { text: 'msg2', from: user2._id, read: false };
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message1], $position: 0 } },
+    });
+    await Chat.findByIdAndUpdate(chat1._id, {
+      $push: { messages: { $each: [message2], $position: 0 } },
+    });
+
+    const response = await request(app)
+      .get(`/chat/${chat1._id}/lastmessage`)
+      .set('x-access-token', getTokenForUser(user4))
+      .expect('Content-Type', /json/)
+      .expect(409);
+
+    expect(response.body).toBe('User is not a member of given chat.');
   });
 });
 

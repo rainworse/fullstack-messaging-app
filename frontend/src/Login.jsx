@@ -16,7 +16,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [validationErrors, setValidationErrors] = useState([]);
 
-  if (user.user) {
+  if (user.userIsValid(user.user)) {
     return <Navigate to="/" />;
   }
 

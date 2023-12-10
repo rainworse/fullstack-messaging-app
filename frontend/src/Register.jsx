@@ -17,7 +17,7 @@ const Register = () => {
   const [repeatPassword, setRepeatPassword] = useState('');
   const [validationErrors, setValidationErrors] = useState([]);
 
-  if (user.user) {
+  if (user.userIsValid(user.user)) {
     return <Navigate to="/" />;
   }
 

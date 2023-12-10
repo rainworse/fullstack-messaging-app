@@ -21,9 +21,15 @@ const Chat = ({ selectedChatID, setSelectedChat }) => {
     if (receivedData.type === 'message') {
       if (receivedData.chatID === selectedChatID) {
         setChatMessages((prevChatMessages) => {
-          console.log(prevChatMessages);
-          console.log(receivedData.message);
           return [...prevChatMessages, receivedData.message];
+        });
+      }
+    } else if (receivedData.type === 'delete_message') {
+      if (receivedData.chatID === selectedChatID) {
+        setChatMessages((prevChatMessages) => {
+          return prevChatMessages.filter((m) => {
+            return m._id !== receivedData.msgID;
+          });
         });
       }
     }
@@ -39,7 +45,11 @@ const Chat = ({ selectedChatID, setSelectedChat }) => {
         ''
       ) : (
         <Box className="chat-content">
-          <MessageList messages={chatMessages} users={chatUsers} />
+          <MessageList
+            messages={chatMessages}
+            users={chatUsers}
+            chatID={selectedChatID}
+          />
           <MessageInput
             sendMessage={(msg) =>
               ChatController.sendMessage(

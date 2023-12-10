@@ -14,18 +14,21 @@ const Header = () => {
   const [username, setUsername] = useState(null);
   const [userImage, setUserImage] = useState('');
 
-  const logout = () => {
-    userContext.setUser(null);
-  };
-
   useEffect(() => {
-    if (userContext.user.userData) {
+    if (
+      userContext.userIsValid(userContext.user) &&
+      userContext.user.userData
+    ) {
       setUsername(userContext.user.userData.username);
       setUserImage(
         'data:image/jpg;base64,' + userContext.user.userData.profileImage
       );
     }
   }, []);
+
+  const logout = () => {
+    userContext.setUser(null, null);
+  };
 
   return (
     <Box

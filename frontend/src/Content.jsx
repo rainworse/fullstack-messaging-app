@@ -12,10 +12,6 @@ const Content = () => {
   const user = useContext(UserContext);
   const [selectedChat, setSelectedChat] = useState(null);
 
-  if (!user.user) {
-    return <Navigate to="/login" />;
-  }
-
   useEffect(() => {
     if (user.user) {
       DBHelper.createWSConnection();
@@ -24,6 +20,10 @@ const Content = () => {
       DBHelper.closeWSConnection();
     };
   }, [user]);
+
+  if (!user.userIsValid(user.user)) {
+    return <Navigate to="/login" />;
+  }
 
   return (
     <Box height="100%">

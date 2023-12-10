@@ -9,17 +9,19 @@ const ChatListController = (() => {
       );
       if (response.successful) {
         setUserChats(
-          response.data.sort((o1, o2) => {
-            return (
-              new Date(o2.lastMessage.dateSent) -
-              new Date(o1.lastMessage.dateSent)
-            );
-          })
+          response.data
+            .filter((c) => c.lastMessage)
+            .sort((o1, o2) => {
+              return (
+                new Date(o2.lastMessage.dateSent) -
+                new Date(o1.lastMessage.dateSent)
+              );
+            })
         );
       }
     };
 
-    if (userContext.user) {
+    if (userContext.userIsValid(userContext.user)) {
       getUserChats();
     }
   };

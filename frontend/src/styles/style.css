@@ -53,3 +53,11 @@ body {
   display: 'inline';
   font-size: '14px';
 }
+
+.delete-message-icon {
+  display: none;
+}
+
+.this-user-message-wrapper:hover > .delete-message-icon {
+  display: initial;
+}

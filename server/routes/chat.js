@@ -124,6 +124,31 @@ router.get(
 );
 
 /**
+ * Get chat data by id
+ */
+router.get(
+  '/chatdata/:id',
+  verifyToken,
+  asyncHandler(async (req, res) => {
+    if (!checkIdIsValid(req.params.id)) {
+      res.status(400).json('Chat ID is not valid.');
+      return;
+    }
+    const chat = await getChatById(req.params.id, res);
+    if (!chat) return;
+
+    if (!checkUserIsInChat(req.user.user_id, chat)) {
+      res.status(403).json('You do not have permissions to access this chat.');
+      return;
+    }
+
+    const chatdata = await getChatData(chat, req.user.user_id, res);
+
+    res.json(chatdata);
+  })
+);
+
+/**
  * Get chat by recipient ID
  *
  * Only returns direct messages, ignores group chats
@@ -260,11 +285,40 @@ router.post(
         );
     }
     if (!message.from.equals(req.user.user_id)) {
-      res.status(400).json('Cannot delete message sent by another user');
+      res.status(400).json('Cannot delete message sent by another user.');
+      return;
     }
 
+    const isLastMessage = chat.messages[0]._id.toString() === req.params.msgId;
     await Chat.findByIdAndUpdate(chat._id, { $pull: { messages: message } });
-    res.status(200).json('Message deleted');
+    res.status(200).json({ message: 'Message deleted.', isLastMessage });
+  })
+);
+
+router.get(
+  '/chat/:id/lastmessage',
+  verifyToken,
+  asyncHandler(async (req, res) => {
+    if (!checkIdIsValid(req.params.id)) {
+      res.status(400).json('Chat ID is not valid.');
+      return;
+    }
+
+    const chat = await getChatById(req.params.id, res);
+    if (!chat) return;
+    if (!checkUserIsInChat(req.user.user_id, chat)) {
+      res.status(409).json(`User is not a member of given chat.`);
+      return;
+    }
+
+    if (chat.messages.length > 0) {
+      const lastMessage = chat.messages[0];
+      const lastMessageUser = await getUserById(lastMessage.from, res);
+      if (!lastMessageUser) return;
+      res.status(200).json({ message: lastMessage.text, lastMessageUser });
+    } else {
+      res.status(200).json({});
+    }
   })
 );
 
@@ -409,38 +463,41 @@ const getUserChats = async (id, res) => {
 
   const returnData = [];
   for (const chat of user.chats) {
-    let chatUsers = chat.users.filter((u) => u.toString() !== id);
-    let lastMessageUser = null;
-    let chatIcon = null;
-    let chatName = null;
-    if (chat.messages.length > 0) {
-      lastMessageUser = await getUserById(chat.messages[0].from, res);
-      if (chat.messages[0].from.toString() !== id) {
-        chatIcon = lastMessageUser.profileImage;
-        chatName = lastMessageUser.username;
-      } else {
-        const otherUser = await getUserById(chatUsers[0], res);
-        chatIcon = otherUser.profileImage;
-        chatName = otherUser.username;
-      }
+    returnData.push(await getChatData(chat, id, res));
+  }
+
+  return returnData;
+};
+
+const getChatData = async (chat, id, res) => {
+  let chatUsers = chat.users.filter((u) => u._id.toString() !== id);
+  let lastMessageUser = null;
+  let chatIcon = null;
+  let chatName = null;
+  if (chat.messages.length > 0) {
+    lastMessageUser = await getUserById(chat.messages[0].from, res);
+    if (chat.messages[0].from.toString() !== id) {
+      chatIcon = lastMessageUser.profileImage;
+      chatName = lastMessageUser.username;
     } else {
       const otherUser = await getUserById(chatUsers[0], res);
       chatIcon = otherUser.profileImage;
       chatName = otherUser.username;
     }
-
-    const chatData = {
-      id: chat._id,
-      chatName,
-      users: chatUsers,
-      lastMessage: chat.messages[0],
-      lastMessageUser,
-      chatIcon,
-    };
-    returnData.push(chatData);
+  } else {
+    const otherUser = await getUserById(chatUsers[0], res);
+    chatIcon = otherUser.profileImage;
+    chatName = otherUser.username;
   }
 
-  return returnData;
+  return {
+    id: chat._id,
+    chatName,
+    users: chatUsers,
+    lastMessage: chat.messages[0],
+    lastMessageUser,
+    chatIcon,
+  };
 };
 
 const getChatById = async (id, res) => {

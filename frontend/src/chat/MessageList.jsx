@@ -4,8 +4,9 @@ import UserContext from '../UserContext';
 import Message from './Message';
 import StyledAvatar from '../styled-components/StyledAvatar';
 import StyleHelper from '../styles/StyleHelper';
+import DBHelper from '../DBHelper';
 
-const MessageList = ({ messages, users }) => {
+const MessageList = ({ messages, users, chatID }) => {
   const userContext = useContext(UserContext);
   const theme = useTheme();
   const chatEnd = useRef(null);
@@ -17,6 +18,25 @@ const MessageList = ({ messages, users }) => {
       chatEnd.current.scrollIntoView(false);
     }
   }, [messages]);
+
+  const handleDeleteMessage = async (id) => {
+    const response = await DBHelper.makeHTTPRequest(
+      `chat/${chatID}/message/${id}/delete`,
+      'POST'
+    );
+    if (response.successful) {
+      DBHelper.sendWSMessage({
+        type: 'send_message',
+        chatID,
+        message: JSON.stringify({
+          type: 'delete_message',
+          msgID: id,
+          chatID,
+          isLastMessage: response.data.isLastMessage,
+        }),
+      });
+    }
+  };
 
   return messages === null || users === null ? (
     ''
@@ -55,7 +75,8 @@ const MessageList = ({ messages, users }) => {
 
             <Message
               message={m.text}
-              user={users.get(m.from)}
+              id={m._id}
+              deleteMessageHandler={handleDeleteMessage}
               color={StyleHelper.getBorderColor(theme, index)}
               sentByThisUser={m.from == userContext.user.id}
             />

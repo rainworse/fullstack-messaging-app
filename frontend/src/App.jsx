@@ -70,6 +70,37 @@ const router = createBrowserRouter([
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
 
+  useEffect(() => {
+    const getUserFromLocalStorage = async () => {
+      let user = JSON.parse(localStorage.getItem('currentUser'));
+      if (user) {
+        DBHelper.setToken(user.token);
+        const response = await DBHelper.makeHTTPRequest('verifyToken', 'GET');
+        if (!response.successful) {
+          user = null;
+        } else {
+          const userData = await getUserData(user.id);
+          user.userData = userData;
+        }
+      } else {
+        user = { id: '', token: '', userData: '' };
+      }
+      setCurrentUser(user);
+    };
+
+    getUserFromLocalStorage();
+  }, []);
+
+  const userIsValid = (user) => {
+    return (
+      user &&
+      user.id &&
+      user.token &&
+      user.id.length > 0 &&
+      user.token.length > 0
+    );
+  };
+
   const getUserData = async (id) => {
     const response = await DBHelper.makeHTTPRequest('user/' + id, 'GET');
 
@@ -83,35 +114,18 @@ function App() {
       setCurrentUser({ id, token, userData });
       localStorage.setItem('currentUser', JSON.stringify({ id, token }));
     } else {
-      setCurrentUser(null);
-      localStorage.setItem('currentUser', JSON.stringify(null));
+      setCurrentUser({});
+      localStorage.removeItem('currentUser');
     }
     DBHelper.setToken(token);
   };
 
-  useEffect(() => {
-    const getUserFromLocalStorage = async () => {
-      let user = JSON.parse(localStorage.getItem('currentUser'));
-      if (user) {
-        DBHelper.setToken(user.token);
-        const response = await DBHelper.makeHTTPRequest('verifyToken', 'GET');
-        if (!response.successful) {
-          user = null;
-        } else {
-          const userData = await getUserData(user.id);
-          user.userData = userData;
-        }
-      }
-      setCurrentUser(user);
-    };
-
-    getUserFromLocalStorage();
-  }, []);
-
   return (
     <div id="app-root">
       <ThemeProvider theme={theme}>
-        <UserContext.Provider value={{ user: currentUser, setUser }}>
+        <UserContext.Provider
+          value={{ user: currentUser, setUser, userIsValid }}
+        >
           <Container id="root-container">
             <RouterProvider router={router} />
           </Container>

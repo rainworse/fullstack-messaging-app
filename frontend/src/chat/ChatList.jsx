@@ -39,11 +39,24 @@ const ChatList = ({ selectedChat, setSelectedChat }) => {
     DBHelper.addWSEventListener('chatlist', wsListener);
   }, []);
 
-  const wsListener = (data) => {
+  useEffect(() => {
+    if (
+      selectedChat &&
+      !selectedChat.newChat &&
+      userChats !== null &&
+      userChats.map((c) => c.id).includes('newchat')
+    ) {
+      setUserChats((prevUserChats) => {
+        return prevUserChats.filter((c) => c.id !== 'newchat');
+      });
+    }
+  }, [selectedChat]);
+
+  const wsListener = async (data) => {
     const receivedData = JSON.parse(data);
     if (receivedData.type === 'message') {
       setUserChats((prevUserChats) => {
-        const chatToUpdate = prevUserChats.find(
+        let chatToUpdate = prevUserChats.find(
           (c) => c.id === receivedData.chatID
         );
         chatToUpdate.lastMessage = receivedData.message;
@@ -64,6 +77,45 @@ const ChatList = ({ selectedChat, setSelectedChat }) => {
             );
           });
       });
+    } else if (receivedData.type === 'new_chat_message') {
+      const response = await DBHelper.makeHTTPRequest(
+        'chatdata/' + receivedData.chatID,
+        'GET'
+      );
+      if (response.successful) {
+        setUserChats((prevUserChats) => {
+          return [response.data, ...prevUserChats];
+        });
+      }
+    } else if (receivedData.type === 'delete_message') {
+      if (receivedData.isLastMessage) {
+        const response = await DBHelper.makeHTTPRequest(
+          `chat/${receivedData.chatID}/lastmessage`,
+          'GET'
+        );
+        if (response.successful) {
+          setUserChats((prevUserChats) => {
+            return prevUserChats.map((c) => {
+              if (c.id === receivedData.chatID) {
+                const newLastMessage = response.data;
+                if (!newLastMessage.message) {
+                  newLastMessage.message = null;
+                  newLastMessage.lastMessageUser = {
+                    _id: null,
+                    username: null,
+                  };
+                }
+                c.lastMessage.text = newLastMessage.message;
+                c.lastMessageUser.id = newLastMessage.lastMessageUser._id;
+                c.lastMessageUser.username =
+                  newLastMessage.lastMessageUser.username;
+                return c;
+              }
+              return c;
+            });
+          });
+        }
+      }
     }
   };
 
