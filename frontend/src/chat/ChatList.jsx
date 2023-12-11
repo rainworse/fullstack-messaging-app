@@ -120,9 +120,12 @@ const ChatList = ({ selectedChat, setSelectedChat }) => {
   };
 
   return (
-    <Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <ChatSearchBar handleSelect={searchResultSelected} />
-      <List className="chatlist">
+      <List
+        className="chatlist"
+        sx={{ flexDirection: 'column', overflow: 'scroll' }}
+      >
         {userChats === null
           ? ''
           : userChats.map((c, index) => {

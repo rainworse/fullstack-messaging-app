@@ -41,7 +41,13 @@ const Message = ({
             }}
             className="this-user-message"
           >
-            <Typography sx={{ width: '100%', overflowWrap: 'break-word' }}>
+            <Typography
+              sx={{
+                width: '100%',
+                display: 'inline-block',
+                overflowWrap: 'break-word',
+              }}
+            >
               {message}
             </Typography>
           </Box>
@@ -57,7 +63,13 @@ const Message = ({
             paddingRight: '10px',
           }}
         >
-          <Typography sx={{ width: '100%', overflowWrap: 'break-word' }}>
+          <Typography
+            sx={{
+              width: '100%',
+              display: 'inline-block',
+              overflowWrap: 'break-word',
+            }}
+          >
             {message}
           </Typography>
         </Box>

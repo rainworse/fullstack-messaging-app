@@ -4,6 +4,7 @@ const asyncHandler = require('express-async-handler');
 const { body, validationResult } = require('express-validator');
 const { default: mongoose } = require('mongoose');
 const { verifyToken } = require('./routeUtils');
+const sizeOf = require('image-size');
 
 const Chat = require('../models/Chat');
 const User = require('../models/user');
@@ -412,6 +413,43 @@ router.post('/chat/:id/user/remove', verifyToken, [
   }),
 ]);
 
+/**
+ * Change user profile image
+ */
+router.post('/user/:id/image/set', verifyToken, [
+  body('image').exists(),
+  asyncHandler(async (req, res) => {
+    if (!checkIdIsValid(req.params.id)) {
+      res.status(400).json('Invalid user ID.');
+      return;
+    }
+
+    if (req.user.user_id !== req.params.id) {
+      res.status(403).json('Cannot set image for another user.');
+    }
+
+    const imageData = req.body.image.replace(/^data:image\/\w+;base64,/, '');
+
+    if (!(await isValidImage(imageData))) {
+      res.status(400).json('Please provide a valid image.');
+    }
+
+    const response = await User.findByIdAndUpdate(req.params.id, {
+      profileImage: {
+        data: imageData,
+        _id: new mongoose.Types.ObjectId(),
+        contentType: 'image/jpg',
+      },
+    });
+
+    if (!response) {
+      res.status(400).json('Given user does not exist.');
+    }
+
+    res.status(200).json('New profile image set successfully.');
+  }),
+]);
+
 const checkIdIsValid = (id) => {
   return mongoose.Types.ObjectId.isValid(id);
 };
@@ -540,5 +578,17 @@ const getChatResponseData = async (chat, res) => {
 
   return response;
 };
+
+async function isValidImage(base64String) {
+  try {
+    const buffer = Buffer.from(base64String, 'base64');
+
+    const dimensions = sizeOf(buffer);
+
+    return dimensions.width > 0 && dimensions.height > 0;
+  } catch (error) {
+    return false;
+  }
+}
 
 module.exports = router;

@@ -28,6 +28,9 @@ const chatRouter = require('../routes/chat');
 const errorHandlers = require('../routes/error');
 const { default: mongoose } = require('mongoose');
 
+const fs = require('fs');
+const { send } = require('process');
+
 app.use(bodyParser.json());
 app.use(
   bodyParser.urlencoded({
@@ -1028,6 +1031,108 @@ describe('/chat/:id/user/remove', () => {
     expect(response.body).toBe(
       `You are not allowed to remove members from this chat as you are not a member.`
     );
+  });
+});
+
+describe('/user/:id/image/set', () => {
+  test('Set user image works', async () => {
+    const newProfileImage = fs.readFileSync(
+      './test/testResources/chatRouter/testImage.jpg',
+      {
+        encoding: 'base64',
+      }
+    );
+    const response = await request(app)
+      .post(`/user/${user1._id}/image/set`)
+      .set('x-access-token', getTokenForUser(user1))
+      .send({ image: newProfileImage })
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    const newUser1 = await User.findById(user1._id).exec();
+
+    expect(Buffer.from(newUser1.profileImage.data).toString()).toBe(
+      newProfileImage
+    );
+  });
+  test('Set user image with base64 string works', async () => {
+    const newProfileImage = fs.readFileSync(
+      './test/testResources/chatRouter/testImage.jpg',
+      {
+        encoding: 'base64',
+      }
+    );
+    const response = await request(app)
+      .post(`/user/${user1._id}/image/set`)
+      .set('x-access-token', getTokenForUser(user1))
+      .send({ image: 'data:image/png;base64,' + newProfileImage })
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    const newUser1 = await User.findById(user1._id).exec();
+
+    expect(Buffer.from(newUser1.profileImage.data).toString()).toBe(
+      newProfileImage
+    );
+  });
+  test('Set user image invalid ID', async () => {
+    const newProfileImage = fs.readFileSync(
+      './test/testResources/chatRouter/testImage.jpg',
+      {
+        encoding: 'base64',
+      }
+    );
+    const response = await request(app)
+      .post(`/user/nonsense/image/set`)
+      .set('x-access-token', getTokenForUser(user1))
+      .send({ image: newProfileImage })
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(response.body).toBe('Invalid user ID.');
+  });
+  test('Set user image without permission', async () => {
+    const newProfileImage = fs.readFileSync(
+      './test/testResources/chatRouter/testImage.jpg',
+      {
+        encoding: 'base64',
+      }
+    );
+    const response = await request(app)
+      .post(`/user/${user1._id}/image/set`)
+      .set('x-access-token', getTokenForUser(user2))
+      .send({ image: newProfileImage })
+      .expect('Content-Type', /json/)
+      .expect(403);
+
+    expect(response.body).toBe('Cannot set image for another user.');
+  });
+  test('Set user image invalid image', async () => {
+    const response = await request(app)
+      .post(`/user/${user1._id}/image/set`)
+      .set('x-access-token', getTokenForUser(user1))
+      .send({ image: 'nonsense' })
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(response.body).toBe('Please provide a valid image.');
+  });
+  test('Set user image nonexistent ID', async () => {
+    const nonexistentID = new mongoose.Types.ObjectId();
+    const newProfileImage = fs.readFileSync(
+      './test/testResources/chatRouter/testImage.jpg',
+      {
+        encoding: 'base64',
+      }
+    );
+    const response = await request(app)
+      .post(`/user/${nonexistentID}/image/set`)
+      .set('x-access-token', getTokenForUser({ _id: nonexistentID }))
+      .send({ image: newProfileImage })
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(response.body).toBe('Given user does not exist.');
   });
 });
 

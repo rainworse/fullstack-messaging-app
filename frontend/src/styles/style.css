@@ -54,6 +54,10 @@ body {
   font-size: '14px';
 }
 
+.chat-list-item-wrapper {
+  overflow: hidden;
+}
+
 .delete-message-icon {
   display: none;
 }

@@ -120,11 +120,28 @@ function App() {
     DBHelper.setToken(token);
   };
 
+  const setUserImage = async (img) => {
+    if (img) {
+      setCurrentUser((prevUser) => {
+        const newUser = {
+          id: prevUser.id,
+          token: prevUser.token,
+          userData: prevUser.userData,
+        };
+        newUser.userData.profileImage = img.replace(
+          /^data:image\/\w+;base64,/,
+          ''
+        );
+        return newUser;
+      });
+    }
+  };
+
   return (
     <div id="app-root">
       <ThemeProvider theme={theme}>
         <UserContext.Provider
-          value={{ user: currentUser, setUser, userIsValid }}
+          value={{ user: currentUser, setUser, userIsValid, setUserImage }}
         >
           <Container id="root-container">
             <RouterProvider router={router} />

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const fs = require('fs');
 
-const defaultProfileImage = fs.readFileSync('./assets/defaultProfile1.png', {
+const defaultProfileImage = fs.readFileSync('./assets/defaultProfile.jpg', {
   encoding: 'base64',
 });
 

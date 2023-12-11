@@ -36,7 +36,10 @@ const Chat = ({ selectedChatID, setSelectedChat }) => {
   };
 
   return (
-    <Box className="open-chat">
+    <Box
+      className="open-chat"
+      sx={{ display: 'flex', flexDirection: 'column' }}
+    >
       {selectedChatID === null ? (
         <Typography sx={{ margin: 'auto' }}>
           Select or create a new chat.
