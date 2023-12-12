@@ -65,6 +65,12 @@ const ChatList = ({ selectedChat, setSelectedChat }) => {
           id: receivedData.message.from,
           username: receivedData.fromUsername,
         };
+        chatToUpdate.lastMessage.text =
+          chatToUpdate.lastMessage.text.replaceAll('&#x27;', "'");
+        chatToUpdate.lastMessage.text =
+          chatToUpdate.lastMessage.text.replaceAll('&quot;', '"');
+        console.log(chatToUpdate);
+
         return prevUserChats
           .map((c) => {
             if (c.id === chatToUpdate.id) return chatToUpdate;
@@ -106,6 +112,15 @@ const ChatList = ({ selectedChat, setSelectedChat }) => {
                   };
                 }
                 c.lastMessage.text = newLastMessage.message;
+                c.lastMessage.text = c.lastMessage.text.replaceAll(
+                  '&#x27;',
+                  "'"
+                );
+                c.lastMessage.text = c.lastMessage.text.replaceAll(
+                  '&quot;',
+                  '"'
+                );
+
                 c.lastMessageUser.id = newLastMessage.lastMessageUser._id;
                 c.lastMessageUser.username =
                   newLastMessage.lastMessageUser.username;

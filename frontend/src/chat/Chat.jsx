@@ -20,8 +20,12 @@ const Chat = ({ selectedChatID, setSelectedChat }) => {
     const receivedData = JSON.parse(data);
     if (receivedData.type === 'message') {
       if (receivedData.chatID === selectedChatID) {
+        const message = receivedData.message;
+        message.text = message.text.replaceAll('&#x27;', "'");
+        message.text = message.text.replaceAll('&quot;', '"');
+
         setChatMessages((prevChatMessages) => {
-          return [...prevChatMessages, receivedData.message];
+          return [...prevChatMessages, message];
         });
       }
     } else if (receivedData.type === 'delete_message') {
