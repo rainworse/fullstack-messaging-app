@@ -63,3 +63,5 @@ Follow these steps to set up the project on your local machine:
 
 5. **Open in Browser**
    Visit `http://localhost:5173` in your browser to explore the Messenger Clone.
+
+For an example of a populated user log in as JohnDoe (password: "password").
