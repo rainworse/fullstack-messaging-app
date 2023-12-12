@@ -11,6 +11,11 @@ const ChatListController = (() => {
         setUserChats(
           response.data
             .filter((c) => c.lastMessage)
+            .map((m) => {
+              m.lastMessage.text = m.lastMessage.text.replaceAll('&#x27;', "'");
+              m.lastMessage.text = m.lastMessage.text.replaceAll('&quot;', '"');
+              return m;
+            })
             .sort((o1, o2) => {
               return (
                 new Date(o2.lastMessage.dateSent) -

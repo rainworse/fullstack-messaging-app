@@ -5,7 +5,13 @@ const ChatController = (() => {
     const getChatData = async () => {
       const response = await DBHelper.makeHTTPRequest('chat/' + chatID, 'GET');
       if (response.successful) {
-        setChatMessages(response.data.messages.reverse());
+        setChatMessages(
+          response.data.messages.reverse().map((m) => {
+            m.text = m.text.replaceAll('&#x27;', "'");
+            m.text = m.text.replaceAll('&quot;', '"');
+            return m;
+          })
+        );
         const users = new Map();
         for (const user of response.data.users) {
           users.set(user._id, user);
