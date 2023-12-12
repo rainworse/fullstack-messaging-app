@@ -6,6 +6,7 @@ Welcome to Messenger Clone, a project that replicates the look and feel of Faceb
 
 - **Real-time Messaging**: Experience seamless real-time messaging just like in Facebook Messenger.
 - **User Authentication**: Securely sign in and authenticate users for a personalized experience.
+- **Chat Search**: Search for users to chat with by their username.
 - **Responsive Design**: Enjoy a consistent and user-friendly experience across various devices.
 
 ## Tech Stack
