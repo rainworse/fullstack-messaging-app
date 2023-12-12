@@ -22,7 +22,7 @@ body {
   height: 92%;
 }
 
-.main-content > .chatlist {
+.main-content > .sidebar {
   width: 28%;
 }
 
@@ -52,6 +52,16 @@ body {
 .chat-list-item-secondary-from {
   display: 'inline';
   font-size: '14px';
+}
+
+.message {
+  border: 2px solid;
+  border-radius: 1rem;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+  max-width: 100%;
 }
 
 .chat-list-item-wrapper {

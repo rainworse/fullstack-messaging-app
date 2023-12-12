@@ -18,7 +18,7 @@ const Message = ({
     >
       {sentByThisUser ? (
         <Box
-          sx={{ display: 'flex', alignItems: 'center' }}
+          sx={{ display: 'flex', alignItems: 'center', maxWidth: '100%' }}
           className="this-user-message-wrapper"
         >
           <StyledDeleteForeverIcon
@@ -30,16 +30,12 @@ const Message = ({
           />
           <Box
             sx={{
-              border: '2px solid ' + color.main,
-              borderRadius: '1rem',
+              borderColor: color.main,
               background: 'white',
               color: 'black',
-              paddingTop: '5px',
-              paddingBottom: '5px',
-              paddingLeft: '10px',
-              paddingRight: '10px',
+              boxSizing: 'border-box',
             }}
-            className="this-user-message"
+            className="this-user-message message"
           >
             <Typography
               sx={{
@@ -55,13 +51,9 @@ const Message = ({
       ) : (
         <Box
           sx={{
-            border: '2px solid ' + color.main,
-            borderRadius: '1rem',
-            paddingTop: '5px',
-            paddingBottom: '5px',
-            paddingLeft: '10px',
-            paddingRight: '10px',
+            borderColor: color.main,
           }}
+          className="message"
         >
           <Typography
             sx={{

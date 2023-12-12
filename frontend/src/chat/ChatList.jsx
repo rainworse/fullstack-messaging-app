@@ -120,7 +120,10 @@ const ChatList = ({ selectedChat, setSelectedChat }) => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box
+      className="sidebar"
+      sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+    >
       <ChatSearchBar handleSelect={searchResultSelected} />
       <List
         className="chatlist"
