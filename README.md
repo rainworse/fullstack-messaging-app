@@ -28,8 +28,14 @@ Follow these steps to set up the project on your local machine:
    ```
 
 2. **Install Dependencies**
+
+   Dependencies for the server and the frontend need to be installed seperately:
    ```bash
-   cd messenger-clone
+   cd server
+   npm install
+   ```
+   ```bash
+   cd frontend
    npm install
    ```
 
@@ -42,17 +48,17 @@ Follow these steps to set up the project on your local machine:
 
 4. **Run the Application**
 
-   - To start the backend server, navigate to the server directory and run the following command:
-     ```bash
-     cd server
-     npm run start
-     ```
+   To start the backend server, navigate to the server directory and run the following command:
+   ```bash
+   cd server
+   npm run start
+   ```
 
-   - To launch the frontend, navigate to the frontend directory and execute the following command:
-     ```bash
-     cd frontend
-     npm run dev
-     ```
+   To launch the frontend, navigate to the frontend directory and execute the following command:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
 
 5. **Open in Browser**
    Visit `http://localhost:5173` in your browser to explore the Messenger Clone.
