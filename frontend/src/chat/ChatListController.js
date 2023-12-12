@@ -35,14 +35,16 @@ const ChatListController = (() => {
     setUserChats
   ) => {
     const clickedChat = id.newChat ? chatRefs.get('newchat') : chatRefs.get(id);
-    const clickedElement = clickedChat.firstChild;
-    if (clickedElement && id !== selectedChat) {
-      if (selectedListItem !== null && selectedListItem.newChat) {
-        removeNewChat(id, setUserChats);
+    if (clickedChat) {
+      const clickedElement = clickedChat.firstChild;
+      if (clickedElement && id !== selectedChat) {
+        if (selectedListItem !== null && selectedListItem.newChat) {
+          removeNewChat(id, setUserChats);
+        }
+        setSelectedChat(id);
+        if (id.newChat) clickedElement.newChat = true;
+        selectedListItem = clickedElement;
       }
-      setSelectedChat(id);
-      if (id.newChat) clickedElement.newChat = true;
-      selectedListItem = clickedElement;
     }
   };
 
