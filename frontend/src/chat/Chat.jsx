@@ -18,25 +18,11 @@ const Chat = ({ selectedChatID, setSelectedChat }) => {
 
   const wsListener = (data) => {
     const receivedData = JSON.parse(data);
-    if (receivedData.type === 'message') {
-      if (receivedData.chatID === selectedChatID) {
-        const message = receivedData.message;
-        message.text = message.text.replaceAll('&#x27;', "'");
-        message.text = message.text.replaceAll('&quot;', '"');
-
-        setChatMessages((prevChatMessages) => {
-          return [...prevChatMessages, message];
-        });
-      }
-    } else if (receivedData.type === 'delete_message') {
-      if (receivedData.chatID === selectedChatID) {
-        setChatMessages((prevChatMessages) => {
-          return prevChatMessages.filter((m) => {
-            return m._id !== receivedData.msgID;
-          });
-        });
-      }
-    }
+    ChatController.receiveWSMessage(
+      receivedData,
+      setChatMessages,
+      selectedChatID
+    );
   };
 
   return (

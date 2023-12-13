@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import UserContext from '../UserContext';
 import { Box, List, useTheme } from '@mui/material';
-import ChatListItem from './ChatListItem';
-import ChatSearchBar from './ChatSearchBar';
+import ChatListItem from './chatlistitem/ChatListItem';
+import ChatSearchBar from './chatsearch/ChatSearchBar';
 import StyleHelper from '../styles/StyleHelper';
 import ChatListController from './ChatListController';
 import DBHelper from '../DBHelper';
@@ -54,84 +54,7 @@ const ChatList = ({ selectedChat, setSelectedChat }) => {
 
   const wsListener = async (data) => {
     const receivedData = JSON.parse(data);
-    if (receivedData.type === 'message') {
-      setUserChats((prevUserChats) => {
-        let chatToUpdate = prevUserChats.find(
-          (c) => c.id === receivedData.chatID
-        );
-        chatToUpdate.lastMessage = receivedData.message;
-        chatToUpdate.lastMessage.dateSent = Date.now();
-        chatToUpdate.lastMessageUser = {
-          id: receivedData.message.from,
-          username: receivedData.fromUsername,
-        };
-        chatToUpdate.lastMessage.text =
-          chatToUpdate.lastMessage.text.replaceAll('&#x27;', "'");
-        chatToUpdate.lastMessage.text =
-          chatToUpdate.lastMessage.text.replaceAll('&quot;', '"');
-        console.log(chatToUpdate);
-
-        return prevUserChats
-          .map((c) => {
-            if (c.id === chatToUpdate.id) return chatToUpdate;
-            return c;
-          })
-          .sort((o1, o2) => {
-            return (
-              new Date(o2.lastMessage.dateSent) -
-              new Date(o1.lastMessage.dateSent)
-            );
-          });
-      });
-    } else if (receivedData.type === 'new_chat_message') {
-      const response = await DBHelper.makeHTTPRequest(
-        'chatdata/' + receivedData.chatID,
-        'GET'
-      );
-      if (response.successful) {
-        setUserChats((prevUserChats) => {
-          return [response.data, ...prevUserChats];
-        });
-      }
-    } else if (receivedData.type === 'delete_message') {
-      if (receivedData.isLastMessage) {
-        const response = await DBHelper.makeHTTPRequest(
-          `chat/${receivedData.chatID}/lastmessage`,
-          'GET'
-        );
-        if (response.successful) {
-          setUserChats((prevUserChats) => {
-            return prevUserChats.map((c) => {
-              if (c.id === receivedData.chatID) {
-                const newLastMessage = response.data;
-                if (!newLastMessage.message) {
-                  newLastMessage.message = null;
-                  newLastMessage.lastMessageUser = {
-                    _id: null,
-                    username: null,
-                  };
-                }
-                c.lastMessage.text = newLastMessage.message;
-                c.lastMessage.text = c.lastMessage.text.replaceAll(
-                  '&#x27;',
-                  "'"
-                );
-                c.lastMessage.text = c.lastMessage.text.replaceAll(
-                  '&quot;',
-                  '"'
-                );
-
-                c.lastMessageUser.id = newLastMessage.lastMessageUser._id;
-                c.lastMessageUser.username =
-                  newLastMessage.lastMessageUser.username;
-                return c;
-              }
-              return c;
-            });
-          });
-        }
-      }
-    }
+    ChatListController.handleWSMessage(receivedData, setUserChats);
   };
 
   return (

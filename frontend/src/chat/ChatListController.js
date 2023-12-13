@@ -104,7 +104,87 @@ const ChatListController = (() => {
     }
   };
 
-  return { initChatList, chatClicked, searchResultSelected };
+  const handleWSMessage = async (receivedData, setUserChats) => {
+    if (receivedData.type === 'message') {
+      setUserChats((prevUserChats) => {
+        let chatToUpdate = prevUserChats.find(
+          (c) => c.id === receivedData.chatID
+        );
+        chatToUpdate.lastMessage = receivedData.message;
+        chatToUpdate.lastMessage.dateSent = Date.now();
+        chatToUpdate.lastMessageUser = {
+          id: receivedData.message.from,
+          username: receivedData.fromUsername,
+        };
+        chatToUpdate.lastMessage.text =
+          chatToUpdate.lastMessage.text.replaceAll('&#x27;', "'");
+        chatToUpdate.lastMessage.text =
+          chatToUpdate.lastMessage.text.replaceAll('&quot;', '"');
+
+        return prevUserChats
+          .map((c) => {
+            if (c.id === chatToUpdate.id) return chatToUpdate;
+            return c;
+          })
+          .sort((o1, o2) => {
+            return (
+              new Date(o2.lastMessage.dateSent) -
+              new Date(o1.lastMessage.dateSent)
+            );
+          });
+      });
+    } else if (receivedData.type === 'new_chat_message') {
+      const response = await DBHelper.makeHTTPRequest(
+        'chatdata/' + receivedData.chatID,
+        'GET'
+      );
+      if (response.successful) {
+        setUserChats((prevUserChats) => {
+          return [response.data, ...prevUserChats];
+        });
+      }
+    } else if (receivedData.type === 'delete_message') {
+      if (receivedData.isLastMessage) {
+        const response = await DBHelper.makeHTTPRequest(
+          `chat/${receivedData.chatID}/lastmessage`,
+          'GET'
+        );
+        if (response.successful) {
+          setUserChats((prevUserChats) => {
+            return prevUserChats.map((c) => {
+              if (c.id === receivedData.chatID) {
+                const newLastMessage = response.data;
+                if (!newLastMessage.message) {
+                  newLastMessage.message = null;
+                  newLastMessage.lastMessageUser = {
+                    _id: null,
+                    username: null,
+                  };
+                }
+                c.lastMessage.text = newLastMessage.message;
+                c.lastMessage.text = c.lastMessage.text.replaceAll(
+                  '&#x27;',
+                  "'"
+                );
+                c.lastMessage.text = c.lastMessage.text.replaceAll(
+                  '&quot;',
+                  '"'
+                );
+
+                c.lastMessageUser.id = newLastMessage.lastMessageUser._id;
+                c.lastMessageUser.username =
+                  newLastMessage.lastMessageUser.username;
+                return c;
+              }
+              return c;
+            });
+          });
+        }
+      }
+    }
+  };
+
+  return { initChatList, chatClicked, searchResultSelected, handleWSMessage };
 })();
 
 export default ChatListController;

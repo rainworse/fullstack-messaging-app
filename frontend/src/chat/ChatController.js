@@ -92,7 +92,29 @@ const ChatController = (() => {
     }
   };
 
-  return { setupChat, sendMessage };
+  const receiveWSMessage = (receivedData, setChatMessages, selectedChatID) => {
+    if (receivedData.type === 'message') {
+      if (receivedData.chatID === selectedChatID) {
+        const message = receivedData.message;
+        message.text = message.text.replaceAll('&#x27;', "'");
+        message.text = message.text.replaceAll('&quot;', '"');
+
+        setChatMessages((prevChatMessages) => {
+          return [...prevChatMessages, message];
+        });
+      }
+    } else if (receivedData.type === 'delete_message') {
+      if (receivedData.chatID === selectedChatID) {
+        setChatMessages((prevChatMessages) => {
+          return prevChatMessages.filter((m) => {
+            return m._id !== receivedData.msgID;
+          });
+        });
+      }
+    }
+  };
+
+  return { setupChat, sendMessage, receiveWSMessage };
 })();
 
 export default ChatController;

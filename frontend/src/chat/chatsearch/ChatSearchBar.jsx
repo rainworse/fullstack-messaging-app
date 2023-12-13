@@ -1,8 +1,8 @@
 import { useContext, useState } from 'react';
-import DBHelper from '../DBHelper';
-import StyledTextField from '../styled-components/StyledTextField';
+import DBHelper from '../../DBHelper';
+import StyledTextField from '../../styled-components/StyledTextField';
 import ChatSearchResultList from './ChatSearchResultList';
-import UserContext from '../UserContext';
+import UserContext from '../../UserContext';
 
 const ChatSearchBar = ({ handleSelect }) => {
   const [searchValue, setSearchValue] = useState('');
