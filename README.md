@@ -1,6 +1,8 @@
 # Messenger Clone
 
 Welcome to Messenger Clone, a project that replicates the look and feel of Facebook Messenger. This project serves as a portfolio demonstration of my skills using React, MaterialUI for the frontend, and ExpressJs with MongoDB for the backend.
+![image](https://github.com/rainworse/messenger-clone/assets/98398944/0c59e0df-f340-42f9-9288-71cb2cbee1bc)
+
 
 ## Features
 
